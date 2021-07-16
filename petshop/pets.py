@@ -18,7 +18,22 @@ def format_date(d):
 
 @bp.route("/search/<field>/<value>")
 def search(field, value):
-    # TBD
+    if field != "tag":
+    	field = "tag"
+    conn = db.get_db()
+    cursor = conn.cursor()
+    oby = request.args.get("order_by", "id") # TODO. This is currently not used. 
+    order = request.args.get("order", "asc")
+    list_args = ['id', 'name', 'bought', 'sold', 'species']
+    if oby not in list_args:
+    	oby = 'id'
+    
+    if order == "asc":
+        cursor.execute(f"select p.id, p.name, p.bought, p.sold, s.name from pet p, animal s, tag t, tags_pets tp where p.species = s.id and t.id = tp.tag and p.id = tp.pet and t.name = ? order by p.{oby}", [value])
+    else:
+        cursor.execute(f"select p.id, p.name, p.bought, p.sold, s.name from pet p, animal s, tag t, tags_pets tp where p.species = s.id and t.id = tp.tag and p.id = tp.pet and t.name = ? order by p.{oby} desc", [value])
+    pets = cursor.fetchall()
+    return render_template('index.html', pets = pets, order="desc" if order=="asc" else "asc")
     return ""
 
 @bp.route("/")
@@ -27,10 +42,14 @@ def dashboard():
     cursor = conn.cursor()
     oby = request.args.get("order_by", "id") # TODO. This is currently not used. 
     order = request.args.get("order", "asc")
+    list_args = ['id', 'name', 'bought', 'sold', 'species']
+    if oby not in list_args:
+    	oby = 'id'
+    
     if order == "asc":
-        cursor.execute(f"select p.id, p.name, p.bought, p.sold, s.name from pet p, animal s where p.species = s.id order by p.id")
+        cursor.execute(f"select p.id, p.name, p.bought, p.sold, s.name from pet p, animal s where p.species = s.id order by p.{oby}")
     else:
-        cursor.execute(f"select p.id, p.name, p.bought, p.sold, s.name from pet p, animal s where p.species = s.id order by p.id desc")
+        cursor.execute(f"select p.id, p.name, p.bought, p.sold, s.name from pet p, animal s where p.species = s.id order by p.{oby} desc")
     pets = cursor.fetchall()
     return render_template('index.html', pets = pets, order="desc" if order=="asc" else "asc")
 
